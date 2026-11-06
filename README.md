@@ -1,8 +1,8 @@
-# Eintunken · Vom Keks zum Krümel
+# KeksUndTee · Vom Keks zum Krümel
 
 Interaktive 2D-Lehrsimulation im [Werkzeugdeck](https://werkzeugdeck.pages.dev/#theoretische-spielereien).
 
-**[Anwendung öffnen](https://falkbornmann.github.io/Eintunken/)**
+**[Anwendung öffnen](https://falkbornmann.github.io/KeksUndTee/)**
 
 Sechs illustrative Speisendatensätze, Milch und Tee, Winkel und Eintauchtiefe, vier zeitgesteuerte Phasen, Sättigungs- und Festigkeitskarte, optionaler erster Modellbruch, Zeitregler, CSV- und PNG-Export. Alle Materialwerte sind Lehrannahmen und veränderbar. Keine validierten Lebensmittel- oder Bruchvorhersagen.
 
