@@ -1,4 +1,5 @@
 import {foods} from './model.js';
+import {saturationProfile} from './profile.js';
 const $=id=>document.getElementById(id),fmt=(n,d=1)=>n.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
 const ids=['length','thickness','breadth','D','porosity','initial','density','strength','soften','angle','depth','down','hold','up','after'];
 let result=null, worker=null, playing=false,previousTime=0,playTime=0,fall=0;
@@ -16,6 +17,12 @@ function calculate(){
     if(e.data.error){$('status').textContent=e.data.error;$('status').className='error';worker.terminate();return;}
     if('progress'in e.data){$('status').textContent=`Berechnung läuft … ${Math.round(e.data.progress*100)} %`;return;}
     result=e.data.result;worker.terminate();worker=null;fall=0;$('timeline').max=result.snapshots.length-1;$('timeline').value=0;
+    for (const id of ['profile-offset', 'profile-slider']) {
+      document.getElementById(id).max = result.p.thickness;
+      document.getElementById(id).value = result.p.thickness / 2;
+      document.getElementById(id).disabled = false;
+    }
+    document.getElementById('profile-center').disabled = false;
     for(const id of ['play','start','end','csv','field','png'])$(id).disabled=false;
     $('status').textContent=`Berechnet · ${result.nx} × ${result.ny} Zellen · ${result.steps.toLocaleString('de-DE')} Zeitschritte`;
     $('result-note').textContent=result.reason+`. Ende bei ${fmt(result.snapshots.at(-1).t)} s. `+(result.broken?'Bruchzeit ist eine Modellannahme; Fallbewegung nur illustrativ.':result.reason.startsWith('Zeitlimit')?'Das Kriterium für nahezu unveränderte Verteilung wurde nicht erreicht.':'Das Kriterium betrifft die Flüssigkeitsverteilung, nicht die weitere Festigkeitsabnahme.');
@@ -27,7 +34,7 @@ function mix(a,b,s){return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*Math.min(1,
 function render(){if(!result)return;const f=frame();$('clock').textContent=`t = ${fmt(f.t)} s`;$('phase').textContent=result.broken&&f===result.snapshots.at(-1)?'Modellbruch':f.phase;
   [...$('phases').children].forEach(x=>x.classList.toggle('active',x.textContent===f.phase));$('mean').textContent=fmt(f.mean*100)+' %';$('uptake').textContent=fmt(f.uptake,2)+' g';$('risk').textContent=fmt(f.ratio,2)+(result.p.fracture?'':' · ohne Bruch');
   $('scene').setAttribute('aria-label',`${$('phase').textContent}, ${fmt(f.t)} Sekunden. Sättigung ${fmt(f.mean*100)} Prozent; Aufnahme ${fmt(f.uptake,2)} Gramm.`);
-  const soft=$('view').value==='soft';$('legend-start').textContent=soft?'aufgeweicht · 0 %':'trocken · 0 %';$('legend-end').textContent=soft?'Anfangsfestigkeit · 100 %':'gesättigt · 100 %';$('gradient').style.background=soft?'linear-gradient(90deg,#bc5448,#e8c692)':'linear-gradient(90deg,#e8c692,#087f83)';drawScene();drawChart();
+  const soft=$('view').value==='soft';$('legend-start').textContent=soft?'aufgeweicht · 0 %':'trocken · 0 %';$('legend-end').textContent=soft?'Anfangsfestigkeit · 100 %':'gesättigt · 100 %';$('gradient').style.background=soft?'linear-gradient(90deg,#bc5448,#e8c692)':'linear-gradient(90deg,#e8c692,#087f83)';drawScene();drawChart();drawProfile();
 }
 function drawScene(){
   if(!result)return;const c=$('scene').getContext('2d'),f=frame(),p=result.p,W=1100,H=520,a=p.angle*Math.PI/180,sn=Math.sin(a),cs=Math.cos(a),vert=p.length*cs+p.thickness*sn,hor=p.length*sn+p.thickness*cs;
@@ -46,6 +53,32 @@ function drawScene(){
     c.beginPath();point(x,y);point(x+result.dx,y);point(x+result.dx,y+result.dy);point(x,y+result.dy);c.closePath();c.fill();c.restore();
   }
   if(!atBreak){c.strokeStyle='#66543a';c.lineWidth=2;c.beginPath();point(-p.thickness/2,0);point(p.thickness/2,0);point(p.thickness/2,p.length);point(-p.thickness/2,p.length);c.closePath();c.stroke();}
+  // Draw each part of the selected line in its own material coordinates.
+  const profileX = p.thickness / 2 - Number($('profile-offset').value);
+  const drawProfileSegment = (from, to, detached) => {
+    c.save();
+    if (detached) c.translate(fall * 35, fall * 75);
+    c.beginPath();
+    c.moveTo(...xy(profileX, from));
+    c.lineTo(...xy(profileX, to));
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = 5;
+    c.stroke();
+    c.strokeStyle = '#7942a0';
+    c.lineWidth = 2.5;
+    c.setLineDash([7, 4]);
+    c.stroke();
+    c.restore();
+  };
+  if (atBreak) {
+    drawProfileSegment(0, cut * result.dy, false);
+    drawProfileSegment(cut * result.dy, p.length, true);
+  } else {
+    drawProfileSegment(0, p.length, false);
+  }
+  c.fillStyle = '#7942a0';
+  c.font = '13px system-ui';
+  c.fillText('Violett gestrichelt: ausgewählte Profillinie', 30, H - 65);
   const top=xy(0,0);c.fillStyle='#173c48';c.beginPath();c.arc(...top,6,0,Math.PI*2);c.fill();c.font='14px system-ui';c.fillText('Haltestelle',top[0]-100,top[1]-18);
   c.strokeStyle='#738b95';c.setLineDash([5,5]);c.beginPath();c.moveTo(...top);c.lineTo(top[0],top[1]+55);c.stroke();c.setLineDash([]);
   c.fillStyle='#173c48';c.fillText(`${fmt(p.angle,0)}° zur Vertikalen`,W-220,35);c.fillText(`${foods[p.food].name} · ${fmt(p.length,0)} × ${fmt(p.thickness,0)} mm`,30,35);
@@ -63,6 +96,64 @@ function drawChart(){
   for(const [key,col,scale]of[['uptake','#087f83',maxM],['mean','#b46e32',1]]){c.beginPath();c.strokeStyle=col;c.lineWidth=2.5;ss.forEach((f,i)=>i?c.lineTo(X(f.t),Y(f[key]/scale)):c.moveTo(X(f.t),Y(f[key]/scale)));c.stroke();}
   c.strokeStyle='#274755';c.setLineDash([4,4]);c.beginPath();c.moveTo(X(frame().t),T);c.lineTo(X(frame().t),H-B);c.stroke();c.setLineDash([]);
 }
+function drawProfile() {
+  const snapshot = frame();
+  const distance = Number($('profile-offset').value);
+  const profile = saturationProfile(result, snapshot, distance);
+  const thickness = result.p.thickness;
+  const central = Math.abs(distance - thickness / 2) < 1e-8;
+  $('profile-position').textContent = central ? 'Mittelachse' : `${fmt(distance, 2)} mm von der unteren Längskante`;
+  $('profile-time').textContent = `t = ${fmt(snapshot.t)} s · Abstand ${fmt(distance, 2)} mm · Länge ${fmt(result.p.length)} mm`;
+  $('profile-chart').setAttribute('aria-label', `Sättigungsprofil bei ${fmt(snapshot.t)} Sekunden, ${fmt(distance, 2)} Millimeter von der unteren Längskante.`);
+  const context = $('profile-chart').getContext('2d');
+  const width = 1100, height = 310;
+  const left = 80, right = 35, top = 30, bottom = 65;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+  const x = position => left + position / result.p.length * plotWidth;
+  const y = saturation => top + (1 - saturation) * plotHeight;
+  context.clearRect(0, 0, width, height);
+  context.font = '13px system-ui';
+  for (let tick = 0; tick <= 4; tick++) {
+    const fraction = tick / 4;
+    context.strokeStyle = '#e2e9eb';
+    context.beginPath();
+    context.moveTo(left, y(fraction));
+    context.lineTo(width - right, y(fraction));
+    context.stroke();
+    context.fillStyle = '#526e79';
+    context.textAlign = 'right';
+    context.fillText(fmt(fraction * 100, 0), left - 12, y(fraction) + 4);
+    context.textAlign = 'center';
+    context.fillText(fmt(fraction * result.p.length), x(fraction * result.p.length), height - bottom + 22);
+  }
+  context.textAlign = 'left';
+  context.fillText('Sättigung [%]', left, 17);
+  context.textAlign = 'center';
+  context.fillText('Ort y [mm] · Haltestelle → freies Ende', width / 2, height - 12);
+  context.beginPath();
+  for (const [index, sample] of profile.entries()) {
+    if (index === 0) context.moveTo(x(sample.position), y(sample.saturation));
+    else context.lineTo(x(sample.position), y(sample.saturation));
+  }
+  context.strokeStyle = '#7942a0';
+  context.lineWidth = 3;
+  context.stroke();
+}
+
+function moveProfile(source) {
+  if (!result || !source.validity.valid || source.value === '') return;
+  const distance = Math.max(0, Math.min(result.p.thickness, Number(source.value)));
+  $('profile-offset').value = distance;
+  $('profile-slider').value = distance;
+  render();
+}
+$('profile-offset').addEventListener('input', event => moveProfile(event.target));
+$('profile-slider').addEventListener('input', event => moveProfile(event.target));
+$('profile-center').onclick = () => {
+  $('profile-offset').value = result.p.thickness / 2;
+  moveProfile($('profile-offset'));
+};
 function download(data,type,name){const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 function metadata(){return '# Keks und Tee v1 – illustrative Lehrsimulation; keine validierten Material- oder Bruchdaten\n# Parameter: '+JSON.stringify(result.p)+'\n# '+result.reason+'\n# Dezimaltrennzeichen: Punkt; Spaltentrenner: Semikolon\n';}
 $('settings').addEventListener('submit',e=>{e.preventDefault();calculate();});$('settings').addEventListener('input',dirty);$('food').addEventListener('change',foodDefaults);
