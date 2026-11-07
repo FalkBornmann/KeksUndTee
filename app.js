@@ -227,14 +227,31 @@ function exportGraphic(id, format) {
   const names = {scene: 'querschnitt', chart: 'zeitverlauf', 'profile-chart': 'profil'};
   const name = 'keks-und-tee-' + names[id] + '.' + format;
   const drawings = {scene: drawScene, chart: drawChart, 'profile-chart': drawProfile};
+  const graphic = document.createElement('canvas');
+  graphic.width = canvas.width;
+  graphic.height = canvas.height + 70;
+  const context = format === 'svg' ? new SvgContext(canvas.width, canvas.height) : graphic.getContext('2d');
+  drawings[id](context);
+  if (format === 'svg') context.height += 70;
+  context.fillStyle = 'white';
+  context.fillRect(0, canvas.height, canvas.width, 70);
+  context.textAlign = 'left';
+  context.font = '14px system-ui';
+  context.fillStyle = '#183747';
+  context.fillText('Keks und Tee · t = ' + fmt(frame().t) + ' s · ' + frame().phase, 24, canvas.height + 24);
+  context.font = '12px system-ui';
+  const legends = {
+    scene: $('view').value === 'soft' ? 'Rot: aufgeweicht · Sand: Anfangsfestigkeit · Violett: gewählte Profillinie' : 'Sand: trocken · Türkis: gesättigt · Violett: gewählte Profillinie',
+    chart: 'Türkis: Flüssigkeitsaufnahme [g] · Orange: mittlere Sättigung [%] · Gestrichelt: gewählter Zeitpunkt',
+    'profile-chart': 'Violett: Sättigung · Türkis: lokale Festigkeit · Blau gestrichelt: gemittelte Festigkeit · Orange: Belastung'
+  };
+  context.fillText(legends[id], 24, canvas.height + 49);
   if (format === 'svg') {
-    const context = new SvgContext(canvas.width, canvas.height);
-    drawings[id](context);
     const description = metadata() + 'Zeitpunkt: ' + fmt(frame().t) + ' s; Phase: ' + frame().phase +
       '; Profillinie: ' + $('profile-offset').value + ' mm; Ansicht: ' + $('view').value;
     download(context.toSvg('Keks und Tee · ' + names[id], description), 'image/svg+xml;charset=utf-8', name);
   } else {
-    canvas.toBlob(blob => { if (blob) download(blob, 'image/png', name); });
+    graphic.toBlob(blob => { if (blob) download(blob, 'image/png', name); });
   }
 }
 $('png').onclick = () => exportGraphic('scene', 'png');
