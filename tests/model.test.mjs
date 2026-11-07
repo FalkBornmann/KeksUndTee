@@ -34,3 +34,12 @@ test('Bruch ist optional und beendet die Rechnung beim ersten Ereignis',()=>{
 });
 test('Alle sechs Speisen liefern endliche Ergebnisse',()=>{for(const [food,p]of Object.entries(foods)){const r=simulate({...base,...p,food,after:10});assert.ok(r.snapshots.at(-1).uptake>0);}});
 test('Ungültige Eingaben werden abgewiesen',()=>{assert.throws(()=>simulate({...base,D:NaN}));assert.throws(()=>simulate({...base,down:0,up:0,hold:0}));});
+test('Diagrammwerte und Modellbruch verwenden dieselbe Festigkeit und Belastung',()=>{
+ const r=simulate({...base,angle:90,strength:1000,soften:20,hold:120,fracture:true});
+ for(const snapshot of r.snapshots){
+   const ratios=Array.from(snapshot.stressRows,(stress,row)=>stress/snapshot.strengthRows[row]).slice(2);
+   assert.equal(Math.max(...ratios),snapshot.ratio);
+ }
+ const last=r.snapshots.at(-1);
+ assert.ok(last.stressRows[r.broken.row]>=last.strengthRows[r.broken.row]);
+});

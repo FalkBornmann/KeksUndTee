@@ -33,6 +33,8 @@ export function simulate(p, progress=()=>{}) {
   const dv=dx*dy*p.breadth/1000; // ml per cell
   let initialMass=p.initial*n*dv*p.porosity*fluid.density/1000;
   const wet=(x,y,depth)=>depth>0 && z(x,y,depth)>0;
+  const stressRows = new Float64Array(ny);
+  const strengthRows = new Float64Array(ny);
   function mechanics(depth) {
     let worst=0, row=-1, minStrength=Infinity,force=0,moment=0;
     const area=p.thickness*p.breadth*1e-6, section=p.breadth*p.thickness**2*1e-9/6;
@@ -49,6 +51,8 @@ export function simulate(p, progress=()=>{}) {
       str/=nx; minStrength=Math.min(minStrength,str);
       const stress=Math.abs((force+rowForce/2)*cs)/area+Math.abs(moment+rowForce/2*sn*dy/2000)/section;
       const ratio=stress/str;
+      stressRows[j] = stress;
+      strengthRows[j] = str;
       if(j>1 && ratio>worst){worst=ratio;row=j;}
       force+=rowForce;
     }
@@ -57,7 +61,7 @@ export function simulate(p, progress=()=>{}) {
   function sample(m) {
     let total=0,min=1,max=0;
     for(const v of s){total+=v;min=Math.min(min,v);max=Math.max(max,v);}
-    snapshots.push({t,depth:position(p,t).depth,phase:position(p,t).phase,s:Float32Array.from(s),soft:Float32Array.from(dose,x=>Math.exp(-p.soften*x)),mean:total/n,min,max,uptake:total*dv*p.porosity*fluid.density/1000-initialMass,ratio:m.ratio});
+    snapshots.push({t,depth:position(p,t).depth,phase:position(p,t).phase,s:Float32Array.from(s),soft:Float32Array.from(dose,x=>Math.exp(-p.soften*x)),mean:total/n,min,max,uptake:total*dv*p.porosity*fluid.density/1000-initialMass,ratio:m.ratio,stressRows:stressRows.slice(),strengthRows:strengthRows.slice()});
   }
   sample(mechanics(position(p,0).depth));nextSample=interval;
   while(t<end-1e-8){

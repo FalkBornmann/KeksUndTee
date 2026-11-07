@@ -104,16 +104,32 @@ function drawProfile() {
   const central = Math.abs(distance - thickness / 2) < 1e-8;
   $('profile-position').textContent = central ? 'Mittelachse' : `${fmt(distance, 2)} mm von der unteren Längskante`;
   $('profile-time').textContent = `t = ${fmt(snapshot.t)} s · Abstand ${fmt(distance, 2)} mm · Länge ${fmt(result.p.length)} mm`;
-  $('profile-chart').setAttribute('aria-label', `Sättigungsprofil bei ${fmt(snapshot.t)} Sekunden, ${fmt(distance, 2)} Millimeter von der unteren Längskante.`);
+  const overloaded = profile.filter(sample => sample.fractureEligible && sample.stress >= sample.meanStrength);
+  const broken = result.broken && snapshot.t >= result.broken.t;
+  $('profile-threshold').textContent = broken
+    ? `Modellbruch bei y = ${fmt(result.broken.y)} mm und t = ${fmt(result.broken.t)} s. Belastung erreicht die gemittelte Festigkeit (R ≥ 1).`
+    : overloaded.length
+      ? `Bruchschwelle an ${overloaded.length} Querschnitten erreicht (R ≥ 1). Modellbruch ist ausgeschaltet; die Berechnung läuft weiter.`
+      : 'Bruchschwelle noch nicht erreicht. Modellbruch bei Belastung / gemittelter Festigkeit R ≥ 1.';
+  $('profile-threshold').className = 'notice' + (overloaded.length ? ' warn' : '');
+  $('profile-chart').setAttribute('aria-label', `Sättigung, lokale und gemittelte Festigkeit sowie mechanische Belastung bei ${fmt(snapshot.t)} Sekunden, ${fmt(distance, 2)} Millimeter von der unteren Längskante. ${$('profile-threshold').textContent}`);
   const context = $('profile-chart').getContext('2d');
-  const width = 1100, height = 310;
-  const left = 80, right = 35, top = 30, bottom = 65;
+  const width = 1100, height = 380;
+  const left = 80, right = 90, top = 45, bottom = 65;
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
   const x = position => left + position / result.p.length * plotWidth;
   const y = saturation => top + (1 - saturation) * plotHeight;
+  const maxStress = Math.max(result.p.strength, ...snapshot.stressRows) * 1.05;
+  const mechanicalY = value => y(value / maxStress);
   context.clearRect(0, 0, width, height);
   context.font = '13px system-ui';
+  context.fillStyle = '#edf0f2';
+  context.fillRect(left, top, x(2 * result.dy) - left, plotHeight);
+  for (const sample of overloaded) {
+    context.fillStyle = '#fce3dc';
+    context.fillRect(x(sample.position - result.dy / 2), top, result.dy / result.p.length * plotWidth, plotHeight);
+  }
   for (let tick = 0; tick <= 4; tick++) {
     const fraction = tick / 4;
     context.strokeStyle = '#e2e9eb';
@@ -124,11 +140,15 @@ function drawProfile() {
     context.fillStyle = '#526e79';
     context.textAlign = 'right';
     context.fillText(fmt(fraction * 100, 0), left - 12, y(fraction) + 4);
+    context.textAlign = 'left';
+    context.fillText(fmt(fraction * maxStress / 1000, 2), width - right + 12, y(fraction) + 4);
     context.textAlign = 'center';
     context.fillText(fmt(fraction * result.p.length), x(fraction * result.p.length), height - bottom + 22);
   }
   context.textAlign = 'left';
   context.fillText('Sättigung [%]', left, 17);
+  context.textAlign = 'right';
+  context.fillText('Festigkeit / Belastung [kPa]', width - right, 17);
   context.textAlign = 'center';
   context.fillText('Ort y [mm] · Haltestelle → freies Ende', width / 2, height - 12);
   context.beginPath();
@@ -139,6 +159,37 @@ function drawProfile() {
   context.strokeStyle = '#7942a0';
   context.lineWidth = 3;
   context.stroke();
+  for (const curve of [
+    {key: 'strength', color: '#087f83', dash: []},
+    {key: 'meanStrength', color: '#3e6478', dash: [8, 5]},
+    {key: 'stress', color: '#c34c24', dash: []}
+  ]) {
+    context.beginPath();
+    profile.forEach((sample, index) => {
+      const pointX = x(sample.position);
+      const pointY = mechanicalY(sample[curve.key]);
+      if (index === 0) context.moveTo(pointX, pointY);
+      else context.lineTo(pointX, pointY);
+    });
+    context.strokeStyle = curve.color;
+    context.lineWidth = 2.5;
+    context.setLineDash(curve.dash);
+    context.stroke();
+  }
+  context.setLineDash([]);
+  if (broken) {
+    const breakX = x(result.broken.y);
+    context.strokeStyle = '#a33224';
+    context.setLineDash([4, 4]);
+    context.beginPath();
+    context.moveTo(breakX, top);
+    context.lineTo(breakX, height - bottom);
+    context.stroke();
+    context.setLineDash([]);
+    context.fillStyle = '#a33224';
+    context.textAlign = breakX > width / 2 ? 'right' : 'left';
+    context.fillText('Modellbruch', breakX + (breakX > width / 2 ? -7 : 7), top - 8);
+  }
 }
 
 function moveProfile(source) {

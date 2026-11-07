@@ -14,7 +14,12 @@ export function saturationProfile(result, snapshot, distance) {
     return {
       position: (row + 0.5) * result.dy,
       saturation: snapshot.s[start + left] * (1 - weight)
-        + snapshot.s[start + right] * weight
+        + snapshot.s[start + right] * weight,
+      strength: result.p.strength * (snapshot.soft[start + left] * (1 - weight)
+        + snapshot.soft[start + right] * weight),
+      meanStrength: snapshot.strengthRows[row],
+      stress: snapshot.stressRows[row],
+      fractureEligible: row > 1
     };
   });
 }
