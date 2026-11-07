@@ -64,7 +64,7 @@ function drawChart(){
   c.strokeStyle='#274755';c.setLineDash([4,4]);c.beginPath();c.moveTo(X(frame().t),T);c.lineTo(X(frame().t),H-B);c.stroke();c.setLineDash([]);
 }
 function download(data,type,name){const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
-function metadata(){return '# KeksUndTee v1 – illustrative Lehrsimulation; keine validierten Material- oder Bruchdaten\n# Parameter: '+JSON.stringify(result.p)+'\n# '+result.reason+'\n# Dezimaltrennzeichen: Punkt; Spaltentrenner: Semikolon\n';}
+function metadata(){return '# Keks und Tee v1 – illustrative Lehrsimulation; keine validierten Material- oder Bruchdaten\n# Parameter: '+JSON.stringify(result.p)+'\n# '+result.reason+'\n# Dezimaltrennzeichen: Punkt; Spaltentrenner: Semikolon\n';}
 $('settings').addEventListener('submit',e=>{e.preventDefault();calculate();});$('settings').addEventListener('input',dirty);$('food').addEventListener('change',foodDefaults);
 $('reset').onclick=()=>{const food=$('food').value;$('settings').reset();$('food').value=food;foodDefaults();calculate();};
 $('example').onclick=()=>{$('food').value='brownie';foodDefaults();$('angle').value=60;$('depth').value=35;$('hold').value=30;calculate();};
@@ -72,7 +72,7 @@ $('timeline').oninput=()=>{stop();fall=0;render();};$('view').onchange=render;
 $('start').onclick=()=>{stop();fall=0;$('timeline').value=0;render();};$('end').onclick=()=>{stop();fall=0;$('timeline').value=$('timeline').max;render();};
 $('play').onclick=()=>{if(playing){stop();return;}if($('timeline').value===$('timeline').max)$('timeline').value=0;playing=true;fall=0;playTime=frame().t;previousTime=performance.now();$('play').textContent='Ⅱ Pause';requestAnimationFrame(animate);};
 function animate(now){if(!playing)return;const dt=Math.min(.2,(now-previousTime)/1000);previousTime=now;playTime+=dt*Number($('speed').value);let idx=Number($('timeline').value);while(idx<result.snapshots.length-1&&result.snapshots[idx+1].t<=playTime)idx++;$('timeline').value=idx;render();if(idx===result.snapshots.length-1){if(result.broken&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&fall<1){fall=Math.min(1,fall+dt);drawScene();}else {stop();return;}}requestAnimationFrame(animate);}
-$('csv').onclick=()=>download(metadata()+'time_s;phase;depth_mm;uptake_g;mean_saturation;min_saturation;max_saturation;stress_strength_ratio\n'+result.snapshots.map(f=>[f.t,f.phase,f.depth,f.uptake,f.mean,f.min,f.max,f.ratio].join(';')).join('\n'),'text/csv;charset=utf-8','keksundtee-zeitverlauf.csv');
-$('field').onclick=()=>{let rows=[];const f=frame();for(let j=0;j<result.ny;j++)for(let i=0;i<result.nx;i++){const q=j*result.nx+i;rows.push([(i+.5)*result.dx-result.p.thickness/2,(j+.5)*result.dy,f.s[q],f.soft[q]].join(';'));}download(metadata()+`# Zeitpunkt_s: ${f.t}\nx_mm;y_mm;saturation;relative_strength\n`+rows.join('\n'),'text/csv;charset=utf-8','keksundtee-querschnitt.csv');};
-$('png').onclick=()=>$('scene').toBlob(blob=>{if(blob)download(blob,'image/png','keksundtee-querschnitt.png');});
+$('csv').onclick=()=>download(metadata()+'time_s;phase;depth_mm;uptake_g;mean_saturation;min_saturation;max_saturation;stress_strength_ratio\n'+result.snapshots.map(f=>[f.t,f.phase,f.depth,f.uptake,f.mean,f.min,f.max,f.ratio].join(';')).join('\n'),'text/csv;charset=utf-8','keks-und-tee-zeitverlauf.csv');
+$('field').onclick=()=>{let rows=[];const f=frame();for(let j=0;j<result.ny;j++)for(let i=0;i<result.nx;i++){const q=j*result.nx+i;rows.push([(i+.5)*result.dx-result.p.thickness/2,(j+.5)*result.dy,f.s[q],f.soft[q]].join(';'));}download(metadata()+`# Zeitpunkt_s: ${f.t}\nx_mm;y_mm;saturation;relative_strength\n`+rows.join('\n'),'text/csv;charset=utf-8','keks-und-tee-querschnitt.csv');};
+$('png').onclick=()=>$('scene').toBlob(blob=>{if(blob)download(blob,'image/png','keks-und-tee-querschnitt.png');});
 foodDefaults();calculate();

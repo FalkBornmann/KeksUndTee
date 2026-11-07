@@ -1,4 +1,4 @@
-# KeksUndTee · Vom Keks zum Krümel
+# Keks und Tee · Vom Keks zum Krümel
 
 Interaktive 2D-Lehrsimulation im [Werkzeugdeck](https://werkzeugdeck.pages.dev/#theoretische-spielereien).
 
