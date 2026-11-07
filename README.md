@@ -2,7 +2,7 @@
 
 Interaktive 2D-Lehrsimulation im [Werkzeugdeck](https://werkzeugdeck.pages.dev/#theoretische-spielereien).
 
-**[Anwendung öffnen](https://falkbornmann.github.io/KeksUndTee/)**
+**[Anwendung öffnen](https://werkzeugdeck.pages.dev/keks-und-tee/)**
 
 Sechs illustrative Speisendatensätze, Milch und Tee, Winkel und Eintauchtiefe, vier zeitgesteuerte Phasen, Sättigungs- und Festigkeitskarte, optionaler erster Modellbruch, Zeitregler, CSV- und PNG-Export. Alle Materialwerte sind Lehrannahmen und veränderbar. Keine validierten Lebensmittel- oder Bruchvorhersagen.
 
@@ -26,4 +26,4 @@ Heuristisches Aufweichen anhand zeitintegrierter Zusatzsättigung; vereinfachter
 - `index.html`, `style.css`: Oberfläche, Theorie, Nutzungshinweise.
 - `tests/model.test.mjs`: Phasen, Sättigungsgrenzen, Massenerhaltung, Gittervergleich, Winkel, Bruch und Parameterprüfung.
 
-GitHub Pages liefert die Dateien aus. Eingaben bleiben im Browser; keine KI zur Laufzeit, Tracker oder externen Bibliotheken. Code und Texte wurden mit KI-Unterstützung erstellt. Privates Projekt in Entwicklung. Es gelten die gesetzlichen Haftungsregelungen.
+Cloudflare Pages liefert die Dateien aus. Eingaben bleiben im Browser; keine KI zur Laufzeit, Tracker oder externen Bibliotheken. Code und Texte wurden mit KI-Unterstützung erstellt. Privates Projekt in Entwicklung. Es gelten die gesetzlichen Haftungsregelungen.
