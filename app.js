@@ -1,3 +1,4 @@
+import './svg-context.js';
 import {foods} from './model.js';
 import {saturationProfile} from './profile.js';
 const $=id=>document.getElementById(id),fmt=(n,d=1)=>n.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -23,7 +24,7 @@ function calculate(){
       document.getElementById(id).disabled = false;
     }
     document.getElementById('profile-center').disabled = false;
-    for(const id of ['play','start','end','csv','field','png'])$(id).disabled=false;
+    for(const id of ['play','start','end','csv','field','png','scene-svg','chart-png','chart-svg','profile-png','profile-svg'])$(id).disabled=false;
     $('status').textContent=`Berechnet · ${result.nx} × ${result.ny} Zellen · ${result.steps.toLocaleString('de-DE')} Zeitschritte`;
     $('result-note').textContent=result.reason+`. Ende bei ${fmt(result.snapshots.at(-1).t)} s. `+(result.broken?'Bruchzeit ist eine Modellannahme; Fallbewegung nur illustrativ.':result.reason.startsWith('Zeitlimit')?'Das Kriterium für nahezu unveränderte Verteilung wurde nicht erreicht.':'Das Kriterium betrifft die Flüssigkeitsverteilung, nicht die weitere Festigkeitsabnahme.');
     $('result-note').className='notice'+(result.broken||result.reason.startsWith('Zeitlimit')?' warn':'');render();
@@ -36,8 +37,8 @@ function render(){if(!result)return;const f=frame();$('clock').textContent=`t = 
   $('scene').setAttribute('aria-label',`${$('phase').textContent}, ${fmt(f.t)} Sekunden. Sättigung ${fmt(f.mean*100)} Prozent; Aufnahme ${fmt(f.uptake,2)} Gramm.`);
   const soft=$('view').value==='soft';$('legend-start').textContent=soft?'aufgeweicht · 0 %':'trocken · 0 %';$('legend-end').textContent=soft?'Anfangsfestigkeit · 100 %':'gesättigt · 100 %';$('gradient').style.background=soft?'linear-gradient(90deg,#bc5448,#e8c692)':'linear-gradient(90deg,#e8c692,#087f83)';drawScene();drawChart();drawProfile();
 }
-function drawScene(){
-  if(!result)return;const c=$('scene').getContext('2d'),f=frame(),p=result.p,W=1100,H=520,a=p.angle*Math.PI/180,sn=Math.sin(a),cs=Math.cos(a),vert=p.length*cs+p.thickness*sn,hor=p.length*sn+p.thickness*cs;
+function drawScene(context = null){
+  if(!result)return;const c=context ?? $('scene').getContext('2d'),f=frame(),p=result.p,W=1100,H=520,a=p.angle*Math.PI/180,sn=Math.sin(a),cs=Math.cos(a),vert=p.length*cs+p.thickness*sn,hor=p.length*sn+p.thickness*cs;
   c.clearRect(0,0,W,H);c.fillStyle='#f8faf9';c.fillRect(0,0,W,H);
   const scale=Math.min(5.3,380/(vert+p.depth+20),650/Math.max(hor,30)),waterY=70+vert*scale;
   c.fillStyle=p.liquid==='milch'?'#e4eeec':'#eedec3';c.fillRect(0,waterY,W,H-waterY);c.strokeStyle='#80a9aa';c.lineWidth=2;c.beginPath();c.moveTo(0,waterY);c.lineTo(W,waterY);c.stroke();
@@ -87,16 +88,16 @@ function drawScene(){
   c.strokeStyle='#173c48';c.lineWidth=2;c.beginPath();c.moveTo(32,H-28);c.lineTo(32+10*scale,H-28);c.stroke();c.fillText('10 mm',32,H-40);
   if(atBreak){c.strokeStyle='#b83c29';c.lineWidth=4;c.beginPath();point(-p.thickness/2,cut*result.dy);point(p.thickness/2,cut*result.dy);c.stroke();c.fillStyle='#a33224';c.font='bold 16px system-ui';c.fillText(`MODELLBRUCH bei ${fmt(f.t)} s`,W-330,H-50);c.font='12px system-ui';c.fillText('Fallbewegung nur illustrativ · Rechnung beendet',W-330,H-28);}
 }
-function drawChart(){
-  const c=$('chart').getContext('2d'),W=1100,H=290,L=65,R=65,T=30,B=50,ss=result.snapshots,maxT=Math.max(1,ss.at(-1).t),maxM=Math.max(.1,...ss.map(f=>f.uptake))*1.1;
-  c.clearRect(0,0,W,H);c.font='12px system-ui';
+function drawChart(context = null){
+  const c=context ?? $('chart').getContext('2d'),W=1100,H=290,L=65,R=65,T=30,B=50,ss=result.snapshots,maxT=Math.max(1,ss.at(-1).t),maxM=Math.max(.1,...ss.map(f=>f.uptake))*1.1;
+  c.clearRect(0,0,W,H);c.fillStyle='white';c.fillRect(0,0,W,H);c.lineWidth=1;c.font='12px system-ui';
   for(let i=0;i<=4;i++){let y=T+(H-T-B)*i/4;c.strokeStyle='#e2e9eb';c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();c.fillStyle='#087f83';c.fillText(fmt(maxM*(1-i/4),2),5,y+4);c.fillStyle='#b46e32';c.fillText(fmt(100*(1-i/4),0),W-R+12,y+4);let x=L+(W-L-R)*i/4;c.fillStyle='#526e79';c.fillText(fmt(maxT*i/4,0),x-6,H-25);}
   c.fillStyle='#526e79';c.fillText('g',L-35,15);c.fillText('%',W-R+12,15);c.fillText('Zeit [s]',W/2-20,H-3);
   const X=t=>L+t/maxT*(W-L-R),Y=v=>H-B-v*(H-T-B);
   for(const [key,col,scale]of[['uptake','#087f83',maxM],['mean','#b46e32',1]]){c.beginPath();c.strokeStyle=col;c.lineWidth=2.5;ss.forEach((f,i)=>i?c.lineTo(X(f.t),Y(f[key]/scale)):c.moveTo(X(f.t),Y(f[key]/scale)));c.stroke();}
   c.strokeStyle='#274755';c.setLineDash([4,4]);c.beginPath();c.moveTo(X(frame().t),T);c.lineTo(X(frame().t),H-B);c.stroke();c.setLineDash([]);
 }
-function drawProfile() {
+function drawProfile(exportContext = null) {
   const snapshot = frame();
   const distance = Number($('profile-offset').value);
   const profile = saturationProfile(result, snapshot, distance);
@@ -113,7 +114,7 @@ function drawProfile() {
       : 'Bruchschwelle noch nicht erreicht. Modellbruch bei Belastung / gemittelter Festigkeit R ≥ 1.';
   $('profile-threshold').className = 'notice' + (overloaded.length ? ' warn' : '');
   $('profile-chart').setAttribute('aria-label', `Sättigung, lokale und gemittelte Festigkeit sowie mechanische Belastung bei ${fmt(snapshot.t)} Sekunden, ${fmt(distance, 2)} Millimeter von der unteren Längskante. ${$('profile-threshold').textContent}`);
-  const context = $('profile-chart').getContext('2d');
+  const context = exportContext ?? $('profile-chart').getContext('2d');
   const width = 1100, height = 380;
   const left = 80, right = 90, top = 45, bottom = 65;
   const plotWidth = width - left - right;
@@ -123,6 +124,9 @@ function drawProfile() {
   const maxStress = Math.max(result.p.strength, ...snapshot.stressRows) * 1.05;
   const mechanicalY = value => y(value / maxStress);
   context.clearRect(0, 0, width, height);
+  context.fillStyle = "white";
+  context.fillRect(0, 0, width, height);
+  context.lineWidth = 1;
   context.font = '13px system-ui';
   context.fillStyle = '#edf0f2';
   context.fillRect(left, top, x(2 * result.dy) - left, plotHeight);
@@ -216,5 +220,27 @@ $('play').onclick=()=>{if(playing){stop();return;}if($('timeline').value===$('ti
 function animate(now){if(!playing)return;const dt=Math.min(.2,(now-previousTime)/1000);previousTime=now;playTime+=dt*Number($('speed').value);let idx=Number($('timeline').value);while(idx<result.snapshots.length-1&&result.snapshots[idx+1].t<=playTime)idx++;$('timeline').value=idx;render();if(idx===result.snapshots.length-1){if(result.broken&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&fall<1){fall=Math.min(1,fall+dt);drawScene();}else {stop();return;}}requestAnimationFrame(animate);}
 $('csv').onclick=()=>download(metadata()+'time_s;phase;depth_mm;uptake_g;mean_saturation;min_saturation;max_saturation;stress_strength_ratio\n'+result.snapshots.map(f=>[f.t,f.phase,f.depth,f.uptake,f.mean,f.min,f.max,f.ratio].join(';')).join('\n'),'text/csv;charset=utf-8','keks-und-tee-zeitverlauf.csv');
 $('field').onclick=()=>{let rows=[];const f=frame();for(let j=0;j<result.ny;j++)for(let i=0;i<result.nx;i++){const q=j*result.nx+i;rows.push([(i+.5)*result.dx-result.p.thickness/2,(j+.5)*result.dy,f.s[q],f.soft[q]].join(';'));}download(metadata()+`# Zeitpunkt_s: ${f.t}\nx_mm;y_mm;saturation;relative_strength\n`+rows.join('\n'),'text/csv;charset=utf-8','keks-und-tee-querschnitt.csv');};
-$('png').onclick=()=>$('scene').toBlob(blob=>{if(blob)download(blob,'image/png','keks-und-tee-querschnitt.png');});
+function exportGraphic(id, format) {
+  if (!result) return;
+  stop();
+  const canvas = $(id);
+  const names = {scene: 'querschnitt', chart: 'zeitverlauf', 'profile-chart': 'profil'};
+  const name = 'keks-und-tee-' + names[id] + '.' + format;
+  const drawings = {scene: drawScene, chart: drawChart, 'profile-chart': drawProfile};
+  if (format === 'svg') {
+    const context = new SvgContext(canvas.width, canvas.height);
+    drawings[id](context);
+    const description = metadata() + 'Zeitpunkt: ' + fmt(frame().t) + ' s; Phase: ' + frame().phase +
+      '; Profillinie: ' + $('profile-offset').value + ' mm; Ansicht: ' + $('view').value;
+    download(context.toSvg('Keks und Tee · ' + names[id], description), 'image/svg+xml;charset=utf-8', name);
+  } else {
+    canvas.toBlob(blob => { if (blob) download(blob, 'image/png', name); });
+  }
+}
+$('png').onclick = () => exportGraphic('scene', 'png');
+$('scene-svg').onclick = () => exportGraphic('scene', 'svg');
+$('chart-png').onclick = () => exportGraphic('chart', 'png');
+$('chart-svg').onclick = () => exportGraphic('chart', 'svg');
+$('profile-png').onclick = () => exportGraphic('profile-chart', 'png');
+$('profile-svg').onclick = () => exportGraphic('profile-chart', 'svg');
 foodDefaults();calculate();
