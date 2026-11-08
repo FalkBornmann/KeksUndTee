@@ -13,6 +13,7 @@ function dirty(){if(result){$('status').textContent='Eingaben geändert – bitt
 function stop(){playing=false;$('play').textContent='▶ Abspielen';}
 function calculate(){
   if(!$('settings').reportValidity())return;
+  timelineDock.setActive(false);for(const id of ['timeline','play','start','end'])$(id).disabled=true;
   stop();worker?.terminate();$('status').className='';$('status').textContent='Berechnung läuft …';$('calculate').textContent='Neu berechnen';
   worker=new Worker(new URL('./worker.js',import.meta.url),{type:'module'});
   worker.onerror=()=>{$('status').textContent='Berechnung konnte nicht gestartet werden. Bitte über einen Webserver öffnen.';$('status').className='error';worker?.terminate();};
@@ -26,7 +27,7 @@ function calculate(){
       document.getElementById(id).disabled = false;
     }
     document.getElementById('profile-center').disabled = false;
-    for(const id of ['play','start','end','csv','field','png','scene-svg','chart-png','chart-svg','profile-png','profile-svg'])$(id).disabled=false;
+    for(const id of ['timeline','play','start','end','csv','field','png','scene-svg','chart-png','chart-svg','profile-png','profile-svg'])$(id).disabled=false;
     $('status').textContent=`Berechnet · ${result.nx} × ${result.ny} Zellen · ${result.steps.toLocaleString('de-DE')} Zeitschritte`;
     $('result-note').textContent=result.reason+`. Ende bei ${fmt(result.snapshots.at(-1).t)} s. `+(result.broken?'Bruchzeit ist eine Modellannahme; Fallbewegung nur illustrativ.':result.reason.startsWith('Zeitlimit')?'Das Kriterium für nahezu unveränderte Verteilung wurde nicht erreicht.':'Das Kriterium betrifft die Flüssigkeitsverteilung, nicht die weitere Festigkeitsabnahme.');
     $('result-note').className='notice'+(result.broken||result.reason.startsWith('Zeitlimit')?' warn':'');render();
@@ -34,7 +35,7 @@ function calculate(){
 }
 function frame(){return result?.snapshots[Number($('timeline').value)];}
 function mix(a,b,s){return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*Math.min(1,Math.max(0,s)))).join(',')})`;}
-function render(){if(!result)return;timelineDock.setActive(true);const f=frame();$('timeline').setAttribute('aria-valuetext',fmt(f.t)+' Sekunden · '+f.phase);$('clock').textContent=`t = ${fmt(f.t)} s`;$('phase').textContent=result.broken&&f===result.snapshots.at(-1)?'Modellbruch':f.phase;
+function render(){if(!result)return;timelineDock.setActive(!worker);const f=frame();$('timeline').setAttribute('aria-valuetext',fmt(f.t)+' Sekunden · '+f.phase);$('clock').textContent=`t = ${fmt(f.t)} s`;$('phase').textContent=result.broken&&f===result.snapshots.at(-1)?'Modellbruch':f.phase;
   [...$('phases').children].forEach(x=>x.classList.toggle('active',x.textContent===f.phase));$('mean').textContent=fmt(f.mean*100)+' %';$('uptake').textContent=fmt(f.uptake,2)+' g';$('risk').textContent=fmt(f.ratio,2)+(result.p.fracture?'':' · ohne Bruch');
   $('scene').setAttribute('aria-label',`${$('phase').textContent}, ${fmt(f.t)} Sekunden. Sättigung ${fmt(f.mean*100)} Prozent; Aufnahme ${fmt(f.uptake,2)} Gramm.`);
   const soft=$('view').value==='soft';$('legend-start').textContent=soft?'aufgeweicht · 0 %':'trocken · 0 %';$('legend-end').textContent=soft?'Anfangsfestigkeit · 100 %':'gesättigt · 100 %';$('gradient').style.background=soft?'linear-gradient(90deg,#bc5448,#e8c692)':'linear-gradient(90deg,#e8c692,#087f83)';drawScene();drawChart();drawProfile();
