@@ -18,6 +18,10 @@ export function mountTimelineDock(controls) {
   observer.observe(dock);
 
   return {
+    setHost(host) {
+      host.append(dock);
+      reserveSpace();
+    },
     setActive(value) {
       value = Boolean(value);
       if (value === active) return;
