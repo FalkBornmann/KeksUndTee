@@ -1,0 +1,35 @@
+html {scroll-padding-bottom: calc(var(--timeline-dock-height, 0px) + 24px)}
+body.has-timeline-dock {padding-bottom: calc(var(--timeline-dock-height, 0px) + 20px)}
+.timeline-dock[hidden] {display: none !important}
+.timeline-dock {
+  position: fixed;
+  z-index: 100;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 45dvh;
+  overflow-y: auto;
+  background: #f8faf7;
+  color: #183d36;
+  border-top: 3px solid #dbac6b;
+  box-shadow: 0 -4px 18px #183d3626;
+  padding: 10px max(18px, calc((100% - 1124px) / 2)) calc(10px + env(safe-area-inset-bottom));
+}
+.timeline-dock .timeline, .timeline-dock .time-controls {margin: 0; padding: 0; background: transparent; border: 0}
+.timeline-dock .time-head {display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 14px; font-size: 14px}
+.timeline-dock label {font-size: 13px; margin: 0}
+.timeline-dock input[type=range] {display: block; width: 100%; min-height: 32px; margin: 0; accent-color: #087f83; touch-action: pan-y}
+.timeline-dock output {font-size: 14px; overflow-wrap: anywhere}
+.timeline-dock .actions {display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 0}
+.timeline-dock button, .timeline-dock select {font: inherit; font-size: 14px; min-height: 44px; border-radius: 6px}
+.timeline-dock button {padding: 8px 12px}
+.timeline-dock .actions label, .timeline-dock .speed {display: flex; flex-direction: row; align-items: center; gap: 8px; margin-left: auto}
+.timeline-dock select {width: auto; padding: 6px 10px}
+.timeline-dock input:focus-visible, .timeline-dock button:focus-visible, .timeline-dock select:focus-visible {outline: 3px solid #aa792e; outline-offset: 2px}
+@media (max-width: 520px) {
+  .timeline-dock {padding-left: 12px; padding-right: 12px}
+  .timeline-dock .actions {gap: 5px}
+  .timeline-dock .actions label, .timeline-dock .speed {margin-left: 0}
+  .timeline-dock button {padding: 6px 10px}
+}
+@media print {.timeline-dock {display: none} body.has-timeline-dock {padding-bottom: 0}}

@@ -35,3 +35,6 @@ Online: https://werkzeugdeck.pages.dev/tools/keks-und-tee/
 
 ## Grafikexport
 Die erzeugten Diagramme und Grafiken lassen sich als PNG und als echte SVG-Vektorgrafik speichern. SVG enthält skalierbare Linien, Flächen und Text. Beide Formate übernehmen den gewählten Darstellungszustand; Exporte entstehen lokal im Browser.
+
+## Zeitsteuerung
+Bei aktivem Simulationsverlauf läuft die Zeitsteuerung am unteren Bildschirmrand mit. Derselbe Regler steuert alle Grafiken. Die vorhandenen Wiedergabe- und Positionsfunktionen sind auch beim Betrachten weiter unten liegender Diagramme erreichbar. Die Leiste passt sich Mobilgeräten an und lässt sich mit Tastatur und Touch bedienen.

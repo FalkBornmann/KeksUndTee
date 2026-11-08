@@ -1,8 +1,10 @@
+import {mountTimelineDock} from './timeline-dock.js';
 import './svg-context.js';
 import {foods} from './model.js';
 import {saturationProfile} from './profile.js';
 const $=id=>document.getElementById(id),fmt=(n,d=1)=>n.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
 const ids=['length','thickness','breadth','D','porosity','initial','density','strength','soften','angle','depth','down','hold','up','after'];
+const timelineDock = mountTimelineDock(document.getElementById('time-controls'));
 let result=null, worker=null, playing=false,previousTime=0,playTime=0,fall=0;
 for(const [key,f] of Object.entries(foods)){const o=document.createElement('option');o.value=key;o.textContent=f.name+' · Lehrdatensatz';$('food').append(o);}
 function foodDefaults(){for(const id of ids)if(id in foods[$('food').value])$(id).value=foods[$('food').value][id];dirty();}
@@ -32,7 +34,7 @@ function calculate(){
 }
 function frame(){return result?.snapshots[Number($('timeline').value)];}
 function mix(a,b,s){return `rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*Math.min(1,Math.max(0,s)))).join(',')})`;}
-function render(){if(!result)return;const f=frame();$('clock').textContent=`t = ${fmt(f.t)} s`;$('phase').textContent=result.broken&&f===result.snapshots.at(-1)?'Modellbruch':f.phase;
+function render(){if(!result)return;timelineDock.setActive(true);const f=frame();$('timeline').setAttribute('aria-valuetext',fmt(f.t)+' Sekunden · '+f.phase);$('clock').textContent=`t = ${fmt(f.t)} s`;$('phase').textContent=result.broken&&f===result.snapshots.at(-1)?'Modellbruch':f.phase;
   [...$('phases').children].forEach(x=>x.classList.toggle('active',x.textContent===f.phase));$('mean').textContent=fmt(f.mean*100)+' %';$('uptake').textContent=fmt(f.uptake,2)+' g';$('risk').textContent=fmt(f.ratio,2)+(result.p.fracture?'':' · ohne Bruch');
   $('scene').setAttribute('aria-label',`${$('phase').textContent}, ${fmt(f.t)} Sekunden. Sättigung ${fmt(f.mean*100)} Prozent; Aufnahme ${fmt(f.uptake,2)} Gramm.`);
   const soft=$('view').value==='soft';$('legend-start').textContent=soft?'aufgeweicht · 0 %':'trocken · 0 %';$('legend-end').textContent=soft?'Anfangsfestigkeit · 100 %':'gesättigt · 100 %';$('gradient').style.background=soft?'linear-gradient(90deg,#bc5448,#e8c692)':'linear-gradient(90deg,#e8c692,#087f83)';drawScene();drawChart();drawProfile();
