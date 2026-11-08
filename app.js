@@ -1,3 +1,4 @@
+import './export-menu.js';
 import {mountTimelineDock} from './timeline-dock.js';
 import './svg-context.js';
 import {foods} from './model.js';
@@ -264,3 +265,25 @@ $('chart-svg').onclick = () => exportGraphic('chart', 'svg');
 $('profile-png').onclick = () => exportGraphic('profile-chart', 'png');
 $('profile-svg').onclick = () => exportGraphic('profile-chart', 'svg');
 foodDefaults();calculate();
+
+WDExports.mount({
+  anchor: document.getElementById('chart-png').parentElement,
+  defaultItem: 'scene',
+  legacyButtons: ['png','scene-svg','chart-png','chart-svg','profile-png','profile-svg'].map($),
+  items: [['scene','Querschnitt'],['chart','Zeitverlauf'],['profile-chart','Profil']].map(([id,label]) => ({
+    id, label, enabled: () => !!result && !worker,
+    videoReady: () => !!result && !worker,
+    save: format => exportGraphic(id, format),
+    video: () => {
+      stop();
+      const previous = Number($('timeline').value), previousFall = fall;
+      const last = result.snapshots.length - 1;
+      return {
+        title: 'Keks und Tee · ' + label, color: '#193e35',
+        frame: fraction => { $('timeline').value = Math.round(fraction * last); fall = 0; render(); return $(id); },
+        caption: () => $('clock').textContent + ' · ' + $('phase').textContent,
+        restore: () => { $('timeline').value = previous; fall = previousFall; render(); }
+      };
+    }
+  }))
+});
