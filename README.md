@@ -38,3 +38,8 @@ Die erzeugten Diagramme und Grafiken lassen sich als PNG und als echte SVG-Vekto
 
 ## Zeitsteuerung
 Bei aktivem Simulationsverlauf läuft die Zeitsteuerung am unteren Bildschirmrand mit. Derselbe Regler steuert alle Grafiken. Die vorhandenen Wiedergabe- und Positionsfunktionen sind auch beim Betrachten weiter unten liegender Diagramme erreichbar. Die Leiste passt sich Mobilgeräten an und lässt sich mit Tastatur und Touch bedienen.
+
+## Fachtheorie und einheitliche Bedienung
+[Fachtheorie öffnen](https://werkzeugdeck.pages.dev/bereiche/stofftransport/theorie/) · [Design- und Exportvorgaben](https://github.com/FalkBornmann/Werkzeugdeck/blob/main/docs/DESIGN.md)
+Das gemeinsame Exportmenü bietet Darstellung, Dateityp und Speichern. PNG ist vorausgewählt; SVG enthält skalierbare Vektoren und Text.
+Zeitabhängige Darstellungen können zusätzlich als lokales Video (WebM beziehungsweise MP4 nach Browserunterstützung) gespeichert werden. Die Filmlänge ist wählbar. Eingaben werden während der Aufnahme gesperrt; Abbrechen und Abschluss stellen den vorherigen Zeitpunkt wieder her.
